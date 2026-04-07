@@ -92,6 +92,7 @@
     justify-content: center;
     cursor: pointer;
     user-select: none;
+    touch-action: manipulation;
     margin-bottom: 20px;
   }
 
@@ -688,6 +689,7 @@ let G = DEFAULT_STATE();
 
 function fmt(n) {
   if (n < 1000) return Math.floor(n).toString();
+  if (n >= 1e30) return n.toExponential(2);
   const exp = Math.floor(Math.log10(Math.abs(n)) / 3);
   const idx = Math.min(exp, SUFFIXES.length - 1);
   const val = n / Math.pow(1000, idx);
@@ -745,13 +747,13 @@ function saveGame() {
     lastSaveTime: G.lastSaveTime,
   };
   try {
-    localStorage.setItem('crabclicker_save', JSON.stringify(data));
+    localStorage.setItem('nom_save', JSON.stringify(data));
   } catch(e) {}
 }
 
 function loadGame() {
   try {
-    const raw = localStorage.getItem('crabclicker_save');
+    const raw = localStorage.getItem('nom_save');
     if (!raw) return false;
     const data = JSON.parse(raw);
     G.cookies             = data.cookies            || 0;
@@ -785,7 +787,10 @@ function applyOfflineEarnings() {
   G.totalBaked += earned;
   // Show modal
   const el = document.getElementById('offline-text');
-  el.textContent = 'You were gone for ' + fmtTime(elapsed) + '.\nYour crabs baked ' + fmt(earned) + ' cookies while you slept! (50% rate)';
+  el.textContent = 'You were gone for ' + fmtTime(elapsed) + '.';
+  const line2 = document.createElement('div');
+  line2.textContent = 'Your crabs baked ' + fmt(earned) + ' cookies while you slept! (50% rate)';
+  el.appendChild(line2);
   document.getElementById('offline-modal').classList.add('show');
 }
 
@@ -892,6 +897,8 @@ function performMolt() {
 // ============================================================
 
 function spawnFloatText(x, y, value) {
+  const area = document.getElementById('cookie-area');
+  if (area.querySelectorAll('.float-text').length >= 20) return;
   const el = document.createElement('div');
   el.className = 'float-text';
   el.textContent = '+' + fmt(value);
@@ -902,6 +909,8 @@ function spawnFloatText(x, y, value) {
 }
 
 function spawnCrumbs(x, y) {
+  const area = document.getElementById('cookie-area');
+  if (area.querySelectorAll('.crumb').length >= 30) return;
   const count = 3 + Math.floor(Math.random() * 3);
   for (let i = 0; i < count; i++) {
     const crumb = document.createElement('div');
@@ -1152,7 +1161,7 @@ function handleBuy(upgradeId) {
 
 function renderAchievements() {
   const bar = document.getElementById('achievements-bar');
-  bar.innerHTML = '';
+  while (bar.firstChild) bar.removeChild(bar.firstChild);
   for (const ach of ACHIEVEMENTS) {
     const pip = document.createElement('div');
     pip.className = 'achievement-pip' + (G.unlockedAchievements.includes(ach.id) ? ' unlocked' : '');
