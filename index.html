@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crab Clicker</title>
+<style>
+  :root {
+    --color-bg: #1a1a2e;
+    --color-panel: #16213e;
+    --color-panel-border: #0f3460;
+    --color-crab-red: #e74c3c;
+    --color-cookie-gold: #f39c12;
+    --color-buy-green: #2ecc71;
+    --color-text: #e0e0e0;
+    --color-text-dim: #8892a4;
+    --color-accent-cyan: #00d4ff;
+    --color-accent-purple: #9b59b6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    background: var(--color-bg);
+    color: var(--color-text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* CRT scanlines */
+  .scanlines::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(transparent 0px, rgba(0,0,0,0.1) 2px, transparent 4px);
+    z-index: 9999;
+  }
+
+  #game {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    min-height: 100vh;
+  }
+
+  /* LEFT PANEL */
+  #cookie-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 30px 20px;
+    position: relative;
+    border-right: 2px solid var(--color-panel-border);
+  }
+
+  #game-title {
+    font-size: 24px;
+    color: var(--color-accent-cyan);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    text-shadow: 0 0 10px var(--color-accent-cyan);
+  }
+
+  #cookie-count {
+    font-size: 22px;
+    color: var(--color-cookie-gold);
+    margin-bottom: 4px;
+    text-shadow: 0 0 8px rgba(243,156,18,0.5);
+  }
+
+  #total-baked {
+    font-size: 12px;
+    color: var(--color-text-dim);
+    margin-bottom: 4px;
+  }
+
+  #cps-display {
+    font-size: 13px;
+    color: var(--color-accent-cyan);
+    margin-bottom: 20px;
+  }
+
+  #cookie-wrapper {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 20px;
+  }
+
+  #cookie-wrapper:hover .cookie-sprite-container {
+    filter: brightness(1.15);
+  }
+
+  .cookie-sprite-container {
+    transform: scale(2.5);
+    transform-origin: center;
+    transition: transform 200ms cubic-bezier(0.34,1.56,0.64,1);
+    position: relative;
+    width: 48px;
+    height: 52px;
+  }
+
+  .cookie-sprite-container.clicking {
+    transform: scale(2.3);
+    transition: transform 80ms ease-out;
+  }
+
+  .cookie-sprite {
+    width: 4px;
+    height: 4px;
+    background: transparent;
+    position: absolute;
+    top: 0;
+    left: 0;
+    box-shadow:
+      /* Row 0 */ 12px 0px 0 0 #f39c12, 16px 0px 0 0 #f39c12, 20px 0px 0 0 #f39c12, 24px 0px 0 0 #f39c12, 28px 0px 0 0 #f39c12, 32px 0px 0 0 #f39c12,
+      /* Row 1 */ 8px 4px 0 0 #f39c12, 12px 4px 0 0 #f9c74f, 16px 4px 0 0 #f9c74f, 20px 4px 0 0 #f9c74f, 24px 4px 0 0 #f9c74f, 28px 4px 0 0 #f9c74f, 32px 4px 0 0 #f9c74f, 36px 4px 0 0 #f9c74f, 40px 4px 0 0 #f39c12,
+      /* Row 2 */ 4px 8px 0 0 #f39c12, 8px 8px 0 0 #f9c74f, 12px 8px 0 0 #f9c74f, 16px 8px 0 0 #5a3310, 20px 8px 0 0 #f9c74f, 24px 8px 0 0 #f9c74f, 28px 8px 0 0 #f9c74f, 32px 8px 0 0 #f9c74f, 36px 8px 0 0 #f9c74f, 40px 8px 0 0 #f39c12,
+      /* Row 3 */ 0px 12px 0 0 #f39c12, 4px 12px 0 0 #f9c74f, 8px 12px 0 0 #f9c74f, 12px 12px 0 0 #f9c74f, 16px 12px 0 0 #5a3310, 20px 12px 0 0 #f9c74f, 24px 12px 0 0 #f9c74f, 28px 12px 0 0 #5a3310, 32px 12px 0 0 #f9c74f, 36px 12px 0 0 #f9c74f, 40px 12px 0 0 #f39c12,
+      /* Row 4 */ 0px 16px 0 0 #f39c12, 4px 16px 0 0 #f9c74f, 8px 16px 0 0 #f9c74f, 12px 16px 0 0 #f9c74f, 16px 16px 0 0 #f9c74f, 20px 16px 0 0 #f9c74f, 24px 16px 0 0 #f9c74f, 28px 16px 0 0 #5a3310, 32px 16px 0 0 #f9c74f, 36px 16px 0 0 #f9c74f, 40px 16px 0 0 #f39c12,
+      /* Row 5 */ 0px 20px 0 0 #f39c12, 4px 20px 0 0 #f9c74f, 8px 20px 0 0 #f9c74f, 12px 20px 0 0 #5a3310, 16px 20px 0 0 #f9c74f, 20px 20px 0 0 #f9c74f, 24px 20px 0 0 #f9c74f, 28px 20px 0 0 #f9c74f, 32px 20px 0 0 #f9c74f, 36px 20px 0 0 #f9c74f, 40px 20px 0 0 #f39c12,
+      /* Row 6 */ 0px 24px 0 0 #f39c12, 4px 24px 0 0 #f9c74f, 8px 24px 0 0 #f9c74f, 12px 24px 0 0 #5a3310, 16px 24px 0 0 #f9c74f, 20px 24px 0 0 #5a3310, 24px 24px 0 0 #f9c74f, 28px 24px 0 0 #f9c74f, 32px 24px 0 0 #f9c74f, 36px 24px 0 0 #f9c74f, 40px 24px 0 0 #f39c12,
+      /* Row 7 */ 0px 28px 0 0 #f39c12, 4px 28px 0 0 #f9c74f, 8px 28px 0 0 #f9c74f, 12px 28px 0 0 #f9c74f, 16px 28px 0 0 #f9c74f, 20px 28px 0 0 #5a3310, 24px 28px 0 0 #f9c74f, 28px 28px 0 0 #f9c74f, 32px 28px 0 0 #5a3310, 36px 28px 0 0 #f9c74f, 40px 28px 0 0 #f39c12,
+      /* Row 8 */ 0px 32px 0 0 #f39c12, 4px 32px 0 0 #f9c74f, 8px 32px 0 0 #f9c74f, 12px 32px 0 0 #f9c74f, 16px 32px 0 0 #f9c74f, 20px 32px 0 0 #f9c74f, 24px 32px 0 0 #f9c74f, 28px 32px 0 0 #f9c74f, 32px 32px 0 0 #f9c74f, 36px 32px 0 0 #f9c74f, 40px 32px 0 0 #f39c12,
+      /* Row 9 */ 4px 36px 0 0 #f39c12, 8px 36px 0 0 #c67c00, 12px 36px 0 0 #c67c00, 16px 36px 0 0 #c67c00, 20px 36px 0 0 #c67c00, 24px 36px 0 0 #c67c00, 28px 36px 0 0 #c67c00, 32px 36px 0 0 #c67c00, 36px 36px 0 0 #c67c00, 40px 36px 0 0 #f39c12,
+      /* Row 10 */ 8px 40px 0 0 #f39c12, 12px 40px 0 0 #c67c00, 16px 40px 0 0 #c67c00, 20px 40px 0 0 #c67c00, 24px 40px 0 0 #c67c00, 28px 40px 0 0 #c67c00, 32px 40px 0 0 #c67c00, 36px 40px 0 0 #f39c12,
+      /* Row 11 */ 12px 44px 0 0 #f39c12, 16px 44px 0 0 #f39c12, 20px 44px 0 0 #f39c12, 24px 44px 0 0 #f39c12, 28px 44px 0 0 #f39c12, 32px 44px 0 0 #f39c12;
+  }
+
+  #flavor-text {
+    font-size: 11px;
+    color: var(--color-text-dim);
+    font-style: italic;
+    text-align: center;
+    max-width: 280px;
+    min-height: 32px;
+    margin-bottom: 16px;
+  }
+
+  /* PRESTIGE */
+  #prestige-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    width: 100%;
+    max-width: 300px;
+  }
+
+  #shard-display {
+    font-size: 12px;
+    color: var(--color-accent-purple);
+    text-shadow: 0 0 6px var(--color-accent-purple);
+  }
+
+  #molt-btn {
+    display: none;
+    background: linear-gradient(135deg, var(--color-accent-purple), #6c3483);
+    border: 2px solid var(--color-accent-purple);
+    color: #fff;
+    padding: 10px 24px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+
+  #molt-btn:hover {
+    background: linear-gradient(135deg, #9b59b6, var(--color-accent-purple));
+    box-shadow: 0 0 20px var(--color-accent-purple);
+  }
+
+  #molt-preview {
+    font-size: 11px;
+    color: var(--color-text-dim);
+  }
+
+  /* ACHIEVEMENTS */
+  #achievements-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+    max-width: 320px;
+    margin-bottom: 10px;
+  }
+
+  .achievement-pip {
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--color-panel-border);
+    background: var(--color-panel);
+    cursor: default;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    position: relative;
+  }
+
+  .achievement-pip.unlocked {
+    background: var(--color-cookie-gold);
+    border-color: var(--color-cookie-gold);
+    box-shadow: 0 0 6px rgba(243,156,18,0.5);
+  }
+
+  .achievement-pip:hover .pip-tooltip {
+    display: block;
+  }
+
+  .pip-tooltip {
+    display: none;
+    position: absolute;
+    bottom: 26px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0a0a1a;
+    border: 1px solid var(--color-panel-border);
+    padding: 6px 8px;
+    font-size: 10px;
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
+    color: var(--color-text);
+  }
+
+  #stats-area {
+    font-size: 11px;
+    color: var(--color-text-dim);
+    text-align: center;
+  }
+
+  /* RIGHT PANEL — SHOP */
+  #shop {
+    background: var(--color-panel);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #shop-header {
+    padding: 16px;
+    border-bottom: 2px solid var(--color-panel-border);
+    font-size: 14px;
+    color: var(--color-accent-cyan);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  #shop-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+
+  #shop-list::-webkit-scrollbar {
+    width: 6px;
+  }
+  #shop-list::-webkit-scrollbar-track {
+    background: var(--color-bg);
+  }
+  #shop-list::-webkit-scrollbar-thumb {
+    background: var(--color-panel-border);
+  }
+
+  .shop-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 8px;
+    border: 1px solid var(--color-panel-border);
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    background: rgba(15,52,96,0.2);
+  }
+
+  .shop-item:hover {
+    border-color: var(--color-accent-cyan);
+    background: rgba(0,212,255,0.05);
+  }
+
+  .shop-item.can-afford {
+    border-color: var(--color-buy-green);
+  }
+
+  .shop-item.can-afford:hover {
+    background: rgba(46,204,113,0.1);
+    box-shadow: 0 0 10px rgba(46,204,113,0.2);
+  }
+
+  .shop-item.cannot-afford {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .shop-item.purchase-flash {
+    background: rgba(46,204,113,0.3) !important;
+    border-color: var(--color-buy-green) !important;
+  }
+
+  .shop-item-sprite-wrap {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .shop-item-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .shop-item-name {
+    font-size: 13px;
+    color: var(--color-text);
+    margin-bottom: 2px;
+  }
+
+  .shop-item-desc {
+    font-size: 10px;
+    color: var(--color-text-dim);
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+
+  .shop-item-cost {
+    font-size: 12px;
+    color: var(--color-cookie-gold);
+  }
+
+  .shop-item-cps {
+    font-size: 10px;
+    color: var(--color-accent-cyan);
+  }
+
+  .shop-item-count {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--color-text-dim);
+    flex-shrink: 0;
+    min-width: 28px;
+    text-align: right;
+  }
+
+  .shop-item.can-afford .shop-item-count {
+    color: var(--color-buy-green);
+  }
+
+  /* CRAB SPRITES — inline box-shadow per tier */
+  .crab-sprite {
+    width: 4px;
+    height: 4px;
+    background: transparent;
+    position: absolute;
+  }
+
+  /* FLOATING CLICK NUMBER */
+  .float-text {
+    position: absolute;
+    pointer-events: none;
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--color-cookie-gold);
+    text-shadow: 1px 1px 2px #000;
+    animation: floatUp 1s ease-out forwards;
+    z-index: 50;
+    white-space: nowrap;
+  }
+
+  @keyframes floatUp {
+    0%   { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-80px); }
+  }
+
+  /* COOKIE CRUMBS */
+  .crumb {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--color-cookie-gold);
+    pointer-events: none;
+    animation: crumbFall 0.8s ease-in forwards;
+    z-index: 40;
+  }
+
+  @keyframes crumbFall {
+    0%   { opacity: 1; transform: translate(0, 0); }
+    100% { opacity: 0; transform: translate(var(--cx), var(--cy)); }
+  }
+
+  /* ACHIEVEMENT TOAST */
+  #toast-container {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .achievement-toast {
+    background: var(--color-panel);
+    border: 2px solid var(--color-cookie-gold);
+    padding: 10px 16px;
+    font-size: 12px;
+    max-width: 260px;
+    box-shadow: 0 0 20px rgba(243,156,18,0.4);
+    animation: toastIn 0.3s ease-out forwards;
+  }
+
+  .achievement-toast.out {
+    animation: toastOut 0.3s ease-in forwards;
+  }
+
+  .toast-title {
+    color: var(--color-cookie-gold);
+    margin-bottom: 2px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .toast-name {
+    color: var(--color-text);
+    font-size: 13px;
+  }
+
+  @keyframes toastIn {
+    from { transform: translateX(-120%); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+  }
+
+  @keyframes toastOut {
+    from { transform: translateX(0); opacity: 1; }
+    to   { transform: translateX(-120%); opacity: 0; }
+  }
+
+  /* MOLT FLASH */
+  #molt-flash {
+    position: fixed;
+    inset: 0;
+    background: white;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 500;
+    transition: opacity 0.15s;
+  }
+
+  #molt-flash.active {
+    opacity: 0.8;
+  }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%      { transform: translateX(-8px); }
+    40%      { transform: translateX(8px); }
+    60%      { transform: translateX(-6px); }
+    80%      { transform: translateX(6px); }
+  }
+
+  .shaking {
+    animation: shake 0.3s ease-in-out;
+  }
+
+  /* OFFLINE MODAL */
+  #offline-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 800;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #offline-modal.show {
+    display: flex;
+  }
+
+  .modal-box {
+    background: var(--color-panel);
+    border: 2px solid var(--color-accent-cyan);
+    padding: 30px;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 0 40px rgba(0,212,255,0.3);
+  }
+
+  .modal-title {
+    font-size: 18px;
+    color: var(--color-accent-cyan);
+    margin-bottom: 16px;
+    letter-spacing: 3px;
+  }
+
+  .modal-text {
+    color: var(--color-text);
+    margin-bottom: 20px;
+    line-height: 1.6;
+    font-size: 14px;
+  }
+
+  .modal-btn {
+    background: var(--color-accent-cyan);
+    color: var(--color-bg);
+    border: none;
+    padding: 12px 32px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    font-weight: bold;
+  }
+
+  .modal-btn:hover {
+    background: #00b8d9;
+  }
+
+  /* MOBILE */
+  @media (max-width: 768px) {
+    #game {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+    }
+    #cookie-area {
+      border-right: none;
+      border-bottom: 2px solid var(--color-panel-border);
+    }
+    #shop {
+      max-height: 50vh;
+      overflow: hidden;
+    }
+  }
+</style>
+</head>
+<body class="scanlines">
+
+<div id="molt-flash"></div>
+
+<div id="toast-container"></div>
+
+<div id="offline-modal">
+  <div class="modal-box">
+    <div class="modal-title">WELCOME BACK</div>
+    <div class="modal-text" id="offline-text">Your crabs kept working while you were gone!</div>
+    <button class="modal-btn" onclick="closeOfflineModal()">CLAIM COOKIES</button>
+  </div>
+</div>
+
+<div id="game">
+  <!-- LEFT: COOKIE AREA -->
+  <div id="cookie-area">
+    <div id="game-title">CRAB CLICKER</div>
+    <div id="cookie-count">0 cookies</div>
+    <div id="total-baked">0 cookies baked total</div>
+    <div id="cps-display">0 cookies/sec</div>
+
+    <div id="cookie-wrapper">
+      <div class="cookie-sprite-container" id="cookie-sprite-container">
+        <div class="cookie-sprite"></div>
+      </div>
+    </div>
+
+    <div id="flavor-text">The crabs whisper. They want more.</div>
+
+    <div id="prestige-area">
+      <div id="shard-display">Shell Shards: 0 (+0% production)</div>
+      <button id="molt-btn" onclick="performMolt()">MOLT (+1 SHELL SHARD)</button>
+      <div id="molt-preview"></div>
+    </div>
+
+    <div id="achievements-bar"></div>
+
+    <div id="stats-area">
+      <div id="stats-clicks">Total clicks: 0</div>
+      <div id="stats-molts">Molts: 0</div>
+      <div id="stats-playtime">Playtime: 0s</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: SHOP -->
+  <div id="shop">
+    <div id="shop-header">CRAB SHOP</div>
+    <div id="shop-list"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONSTANTS
+// ============================================================
+
+const SUFFIXES = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc'];
+
+const UPGRADES = [
+  { id: 0, name: 'Baby Crab',       desc: 'Smol. Angy. Hungry.',                                            baseCost: 15,          baseCPS: 0.1,     color: '#e74c3c', color2: '#c0392b' },
+  { id: 1, name: 'Sand Crab',       desc: 'Digs for cookies in the sand. Finds mostly sand.',               baseCost: 100,         baseCPS: 1,       color: '#e8c99a', color2: '#c9a96e' },
+  { id: 2, name: 'Coconut Crab',    desc: 'Strong enough to crack coconuts. Cookies are easier.',           baseCost: 1100,        baseCPS: 8,       color: '#7d5a3c', color2: '#5c3d1e' },
+  { id: 3, name: 'Hermit Crab',     desc: 'Lives in a cookie jar. Rent-free.',                              baseCost: 12000,       baseCPS: 47,      color: '#9b59b6', color2: '#6c3483' },
+  { id: 4, name: 'Crab Army',       desc: "They march in formation. The formation is 'hungry'.",            baseCost: 130000,      baseCPS: 260,     color: '#2ecc71', color2: '#1a8a4a' },
+  { id: 5, name: 'Crab King',       desc: 'Wears a crown made of chocolate chips. Rules with an iron claw.',baseCost: 1400000,     baseCPS: 1400,    color: '#f39c12', color2: '#d68910' },
+  { id: 6, name: 'Crab Scientist',  desc: 'Has discovered that cookies are, in fact, delicious. Published a paper.',  baseCost: 20000000,    baseCPS: 7800,    color: '#00d4ff', color2: '#0099bb' },
+  { id: 7, name: 'Crab Wizard',     desc: 'Conjures cookies from the aether. Side effects include crumbs.', baseCost: 330000000,   baseCPS: 44000,   color: '#e74c3c', color2: '#8e44ad' },
+  { id: 8, name: 'Crab Mothership', desc: 'They came from the Crabulon Nebula. They came for cookies.',     baseCost: 5100000000,  baseCPS: 260000,  color: '#1abc9c', color2: '#148f77' },
+  { id: 9, name: 'Crab God',        desc: 'SNIP SNIP, MORTAL. YOUR COOKIES ARE MINE.',                      baseCost: 75000000000, baseCPS: 1600000, color: '#f0e6ff', color2: '#c39bd3' },
+];
+
+const ACHIEVEMENTS = [
+  // Click achievements
+  { id: 'first_nibble',       name: 'First Nibble',             desc: 'Click the cookie once',               icon: '1' },
+  { id: 'clicker_crab',       name: 'Clicker Crab',             desc: 'Click the cookie 100 times',          icon: '2' },
+  { id: 'carpal_claw',        name: 'Carpal Claw Syndrome',     desc: 'Click 1,000 times',                   icon: '3' },
+  { id: 'snappening',         name: 'The Snappening',           desc: 'Click 10,000 times',                  icon: '4' },
+  // Cookie achievements
+  { id: 'crumb',              name: 'Cookie Crumb',             desc: 'Bake 100 cookies total',              icon: '5' },
+  { id: 'jar',                name: 'Cookie Jar',               desc: 'Bake 10,000 cookies total',           icon: '6' },
+  { id: 'monster',            name: 'Cookie Monster',           desc: 'Bake 1,000,000 cookies total',        icon: '7' },
+  { id: 'galaxy',             name: 'Cookie Galaxy',            desc: 'Bake 1,000,000,000 cookies total',    icon: '8' },
+  { id: 'singularity',        name: 'Cookie Singularity',       desc: 'Bake 1,000,000,000,000 cookies total',icon: '9' },
+  // Upgrade achievements
+  { id: 'crab_dad',           name: 'Crab Dad',                 desc: 'Own 1 Baby Crab',                     icon: 'A' },
+  { id: 'army_of_darkness',   name: 'Army of Darkness',         desc: 'Own 10 Crab Armies',                  icon: 'B' },
+  { id: 'all_hail',           name: 'ALL HAIL',                 desc: 'Own 1 Crab King',                     icon: 'C' },
+  { id: 'peer_reviewed',      name: 'Peer Reviewed',            desc: 'Own 1 Crab Scientist',                icon: 'D' },
+  { id: 'ascended',           name: 'ASCENDED',                 desc: 'Own 1 Crab God',                      icon: 'E' },
+  // CPS achievements
+  { id: 'passive_income',     name: 'Passive Income',           desc: 'Reach 10 cookies/sec',                icon: 'F' },
+  { id: 'factory',            name: 'Cookie Factory',           desc: 'Reach 1,000 cookies/sec',             icon: 'G' },
+  { id: 'singularity_engine', name: 'Cookie Singularity Engine',desc: 'Reach 1,000,000 cookies/sec',         icon: 'H' },
+  // Prestige
+  { id: 'first_molt',         name: 'First Molt',               desc: 'Prestige for the first time',         icon: 'I' },
+  { id: 'serial_molter',      name: 'Serial Molter',            desc: 'Prestige 5 times',                    icon: 'J' },
+  // Secret
+  { id: 'why_here',           name: 'Why Are You Still Here',   desc: 'Play for 24 hours total',             icon: '?' },
+];
+
+const FLAVOR_TEXTS = [
+  'The crabs whisper. They want more.',
+  'Somewhere, a cookie screams.',
+  'This is what peak performance looks like.',
+  'Your crabs have developed a cookie-based economy.',
+  'SNIP SNIP SNIP SNIP SNIP',
+  "Fun fact: crabs can't actually eat cookies. Don't tell them.",
+  'A cookie a day keeps the crab doctor away.',
+  'The Crab King demands tribute.',
+];
+
+// ============================================================
+// GAME STATE
+// ============================================================
+
+const DEFAULT_STATE = () => ({
+  cookies: 0,
+  totalBaked: 0,
+  totalClicks: 0,
+  upgradeCounts: new Array(10).fill(0),
+  unlockedAchievements: [],
+  shellShards: 0,
+  moltCount: 0,
+  totalPlaytime: 0,
+  lastSaveTime: Date.now(),
+});
+
+let G = DEFAULT_STATE();
+
+// ============================================================
+// NUMBER FORMATTING
+// ============================================================
+
+function fmt(n) {
+  if (n < 1000) return Math.floor(n).toString();
+  const exp = Math.floor(Math.log10(Math.abs(n)) / 3);
+  const idx = Math.min(exp, SUFFIXES.length - 1);
+  const val = n / Math.pow(1000, idx);
+  const decimals = val >= 100 ? 0 : val >= 10 ? 1 : 2;
+  return val.toFixed(decimals) + SUFFIXES[idx];
+}
+
+function fmtTime(seconds) {
+  if (seconds < 60) return Math.floor(seconds) + 's';
+  if (seconds < 3600) return Math.floor(seconds / 60) + 'm ' + Math.floor(seconds % 60) + 's';
+  if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ' + Math.floor((seconds % 3600) / 60) + 'm';
+  return Math.floor(seconds / 86400) + 'd ' + Math.floor((seconds % 86400) / 3600) + 'h';
+}
+
+// ============================================================
+// CORE FORMULAS
+// ============================================================
+
+function upgradeCost(upgradeId, owned) {
+  return Math.ceil(UPGRADES[upgradeId].baseCost * Math.pow(1.15, owned));
+}
+
+function computeCPS() {
+  let total = 0;
+  for (let i = 0; i < 10; i++) {
+    total += G.upgradeCounts[i] * UPGRADES[i].baseCPS;
+  }
+  return total * (1 + 0.10 * G.shellShards);
+}
+
+function computePrestigeShards() {
+  return Math.floor(Math.sqrt(G.totalBaked / 1e9));
+}
+
+function clickValue() {
+  const cps = computeCPS();
+  return Math.max(1, cps * 0.01 + 1);
+}
+
+// ============================================================
+// SAVE / LOAD
+// ============================================================
+
+function saveGame() {
+  G.lastSaveTime = Date.now();
+  const data = {
+    cookies: G.cookies,
+    totalBaked: G.totalBaked,
+    totalClicks: G.totalClicks,
+    upgradeCounts: G.upgradeCounts,
+    unlockedAchievements: G.unlockedAchievements,
+    shellShards: G.shellShards,
+    moltCount: G.moltCount,
+    totalPlaytime: G.totalPlaytime,
+    lastSaveTime: G.lastSaveTime,
+  };
+  try {
+    localStorage.setItem('crabclicker_save', JSON.stringify(data));
+  } catch(e) {}
+}
+
+function loadGame() {
+  try {
+    const raw = localStorage.getItem('crabclicker_save');
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    G.cookies             = data.cookies            || 0;
+    G.totalBaked          = data.totalBaked          || 0;
+    G.totalClicks         = data.totalClicks         || 0;
+    G.upgradeCounts       = data.upgradeCounts       || new Array(10).fill(0);
+    G.unlockedAchievements= data.unlockedAchievements|| [];
+    G.shellShards         = data.shellShards         || 0;
+    G.moltCount           = data.moltCount           || 0;
+    G.totalPlaytime       = data.totalPlaytime       || 0;
+    G.lastSaveTime        = data.lastSaveTime        || Date.now();
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+// ============================================================
+// OFFLINE EARNINGS
+// ============================================================
+
+function applyOfflineEarnings() {
+  const now = Date.now();
+  const elapsed = (now - G.lastSaveTime) / 1000;
+  if (elapsed < 10) return;
+  const cps = computeCPS();
+  if (cps <= 0) return;
+  const capped = Math.min(elapsed, 8 * 3600);
+  const earned = capped * cps * 0.5;
+  G.cookies += earned;
+  G.totalBaked += earned;
+  // Show modal
+  const el = document.getElementById('offline-text');
+  el.textContent = 'You were gone for ' + fmtTime(elapsed) + '.\nYour crabs baked ' + fmt(earned) + ' cookies while you slept! (50% rate)';
+  document.getElementById('offline-modal').classList.add('show');
+}
+
+function closeOfflineModal() {
+  document.getElementById('offline-modal').classList.remove('show');
+}
+
+// ============================================================
+// ACHIEVEMENTS
+// ============================================================
+
+function checkAchievements() {
+  const cps = computeCPS();
+  const checks = {
+    first_nibble:       G.totalClicks >= 1,
+    clicker_crab:       G.totalClicks >= 100,
+    carpal_claw:        G.totalClicks >= 1000,
+    snappening:         G.totalClicks >= 10000,
+    crumb:              G.totalBaked >= 100,
+    jar:                G.totalBaked >= 10000,
+    monster:            G.totalBaked >= 1e6,
+    galaxy:             G.totalBaked >= 1e9,
+    singularity:        G.totalBaked >= 1e12,
+    crab_dad:           G.upgradeCounts[0] >= 1,
+    army_of_darkness:   G.upgradeCounts[4] >= 10,
+    all_hail:           G.upgradeCounts[5] >= 1,
+    peer_reviewed:      G.upgradeCounts[6] >= 1,
+    ascended:           G.upgradeCounts[9] >= 1,
+    passive_income:     cps >= 10,
+    factory:            cps >= 1000,
+    singularity_engine: cps >= 1e6,
+    first_molt:         G.moltCount >= 1,
+    serial_molter:      G.moltCount >= 5,
+    why_here:           G.totalPlaytime >= 86400,
+  };
+
+  for (const [id, met] of Object.entries(checks)) {
+    if (met && !G.unlockedAchievements.includes(id)) {
+      G.unlockedAchievements.push(id);
+      const ach = ACHIEVEMENTS.find(a => a.id === id);
+      if (ach) showToast(ach);
+      renderAchievements();
+    }
+  }
+}
+
+function showToast(ach) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'achievement-toast';
+  const title = document.createElement('div');
+  title.className = 'toast-title';
+  title.textContent = 'Achievement Unlocked!';
+  const name = document.createElement('div');
+  name.className = 'toast-name';
+  name.textContent = ach.name;
+  const desc = document.createElement('div');
+  desc.style.cssText = 'font-size:10px;color:var(--color-text-dim);margin-top:2px;';
+  desc.textContent = ach.desc;
+  toast.appendChild(title);
+  toast.appendChild(name);
+  toast.appendChild(desc);
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('out');
+    setTimeout(() => toast.remove(), 310);
+  }, 3300);
+}
+
+// ============================================================
+// PRESTIGE / MOLT
+// ============================================================
+
+function performMolt() {
+  const shards = computePrestigeShards();
+  if (shards < 1) return;
+
+  // Flash
+  const flash = document.getElementById('molt-flash');
+  flash.classList.add('active');
+  setTimeout(() => flash.classList.remove('active'), 150);
+
+  // Shake
+  document.getElementById('cookie-area').classList.add('shaking');
+  setTimeout(() => document.getElementById('cookie-area').classList.remove('shaking'), 310);
+
+  // Apply
+  G.shellShards += shards;
+  G.moltCount++;
+  G.cookies = 0;
+  G.totalBaked = 0; // reset for next prestige cycle only
+  // Note: keep totalBaked for achievements already earned but reset the cycle counter
+  // Actually per spec: resets cookies, CPS (which is by upgrades), upgrade counts
+  G.upgradeCounts = new Array(10).fill(0);
+  // totalBaked resets for CPS calculation, but we keep achievements earned
+
+  checkAchievements();
+  saveGame();
+  renderShop();
+}
+
+// ============================================================
+// COOKIE CLICK EFFECTS
+// ============================================================
+
+function spawnFloatText(x, y, value) {
+  const el = document.createElement('div');
+  el.className = 'float-text';
+  el.textContent = '+' + fmt(value);
+  el.style.left = (x - 20) + 'px';
+  el.style.top = (y - 10) + 'px';
+  document.getElementById('cookie-area').appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+
+function spawnCrumbs(x, y) {
+  const count = 3 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < count; i++) {
+    const crumb = document.createElement('div');
+    crumb.className = 'crumb';
+    const cx = (Math.random() * 60 - 30);
+    const cy = 40 + Math.random() * 30;
+    crumb.style.setProperty('--cx', cx + 'px');
+    crumb.style.setProperty('--cy', cy + 'px');
+    crumb.style.left = x + 'px';
+    crumb.style.top = y + 'px';
+    document.getElementById('cookie-area').appendChild(crumb);
+    setTimeout(() => crumb.remove(), 820);
+  }
+}
+
+// ============================================================
+// CRAB SPRITE GENERATOR
+// This generates a simple Atari-style crab box-shadow for each tier
+// Baby Crab uses the spec sprite; others use colored variations
+// ============================================================
+
+function buildBabyCrabShadow(c1, c2, c3) {
+  // c1 = main, c2 = dark, c3 = light/eye-white
+  const w = '#ffffff', bg = '#1a1a2e';
+  return `
+    4px 0px 0 0 ${c1}, 24px 0px 0 0 ${c1},
+    0px 4px 0 0 ${c1}, 4px 4px 0 0 ${c1}, 8px 4px 0 0 ${c1}, 12px 4px 0 0 ${c1}, 16px 4px 0 0 ${c1}, 20px 4px 0 0 ${c1}, 24px 4px 0 0 ${c1}, 28px 4px 0 0 ${c1},
+    0px 8px 0 0 ${c3}, 4px 8px 0 0 ${c1}, 8px 8px 0 0 ${c1}, 12px 8px 0 0 ${w}, 16px 8px 0 0 ${bg}, 20px 8px 0 0 ${c1}, 24px 8px 0 0 ${c1}, 28px 8px 0 0 ${c1},
+    0px 12px 0 0 ${c1}, 4px 12px 0 0 ${c1}, 8px 12px 0 0 ${c1}, 12px 12px 0 0 ${c1}, 16px 12px 0 0 ${c1}, 20px 12px 0 0 ${c1}, 24px 12px 0 0 ${c1}, 28px 12px 0 0 ${c1},
+    0px 16px 0 0 ${c1}, 4px 16px 0 0 ${c1}, 8px 16px 0 0 ${c1}, 12px 16px 0 0 ${c1}, 16px 16px 0 0 ${c1}, 20px 16px 0 0 ${c1}, 24px 16px 0 0 ${c1}, 28px 16px 0 0 ${c2},
+    0px 20px 0 0 ${c2}, 8px 20px 0 0 ${c2}, 16px 20px 0 0 ${c2}, 24px 20px 0 0 ${c2},
+    8px 24px 0 0 ${c2}, 16px 24px 0 0 ${c2}
+  `.trim();
+}
+
+// Larger crab for higher tiers — 9x7 grid
+function buildBigCrabShadow(c1, c2, c3) {
+  const w = '#ffffff', bg = '#1a1a2e';
+  return `
+    4px 0px 0 0 ${c1}, 8px 0px 0 0 ${c1}, 28px 0px 0 0 ${c1}, 32px 0px 0 0 ${c1},
+    0px 4px 0 0 ${c1}, 4px 4px 0 0 ${c2}, 8px 4px 0 0 ${c1}, 12px 4px 0 0 ${c1}, 16px 4px 0 0 ${c1}, 20px 4px 0 0 ${c1}, 24px 4px 0 0 ${c1}, 28px 4px 0 0 ${c2}, 32px 4px 0 0 ${c1}, 36px 4px 0 0 ${c1},
+    0px 8px 0 0 ${c3}, 4px 8px 0 0 ${c1}, 8px 8px 0 0 ${c1}, 12px 8px 0 0 ${w}, 16px 8px 0 0 ${bg}, 20px 8px 0 0 ${c1}, 24px 8px 0 0 ${w}, 28px 8px 0 0 ${bg}, 32px 8px 0 0 ${c1}, 36px 8px 0 0 ${c3},
+    0px 12px 0 0 ${c1}, 4px 12px 0 0 ${c1}, 8px 12px 0 0 ${c1}, 12px 12px 0 0 ${c1}, 16px 12px 0 0 ${c1}, 20px 12px 0 0 ${c1}, 24px 12px 0 0 ${c1}, 28px 12px 0 0 ${c1}, 32px 12px 0 0 ${c1}, 36px 12px 0 0 ${c1},
+    0px 16px 0 0 ${c1}, 4px 16px 0 0 ${c1}, 8px 16px 0 0 ${c1}, 12px 16px 0 0 ${c1}, 16px 16px 0 0 ${c2}, 20px 16px 0 0 ${c2}, 24px 16px 0 0 ${c1}, 28px 16px 0 0 ${c1}, 32px 16px 0 0 ${c1}, 36px 16px 0 0 ${c1},
+    0px 20px 0 0 ${c2}, 8px 20px 0 0 ${c2}, 16px 20px 0 0 ${c2}, 24px 20px 0 0 ${c2}, 32px 20px 0 0 ${c2},
+    4px 24px 0 0 ${c2}, 12px 24px 0 0 ${c2}, 20px 24px 0 0 ${c2}, 28px 24px 0 0 ${c2}
+  `.trim();
+}
+
+// King crab gets a crown accent
+function buildKingCrabShadow(c1, c2, c3) {
+  const w = '#ffffff', bg = '#1a1a2e', gold = '#f39c12';
+  return `
+    8px 0px 0 0 ${gold}, 16px 0px 0 0 ${gold}, 24px 0px 0 0 ${gold},
+    4px 4px 0 0 ${c1}, 8px 4px 0 0 ${gold}, 12px 4px 0 0 ${c1}, 16px 4px 0 0 ${gold}, 20px 4px 0 0 ${c1}, 24px 4px 0 0 ${gold}, 28px 4px 0 0 ${c1},
+    0px 8px 0 0 ${c1}, 4px 8px 0 0 ${c1}, 8px 8px 0 0 ${c1}, 12px 8px 0 0 ${c1}, 16px 8px 0 0 ${c1}, 20px 8px 0 0 ${c1}, 24px 8px 0 0 ${c1}, 28px 8px 0 0 ${c1}, 32px 8px 0 0 ${c1},
+    0px 12px 0 0 ${c3}, 4px 12px 0 0 ${c1}, 8px 12px 0 0 ${c1}, 12px 12px 0 0 ${w}, 16px 12px 0 0 ${bg}, 20px 12px 0 0 ${c1}, 24px 12px 0 0 ${w}, 28px 12px 0 0 ${bg}, 32px 12px 0 0 ${c1}, 36px 12px 0 0 ${c3},
+    0px 16px 0 0 ${c1}, 4px 16px 0 0 ${c1}, 8px 16px 0 0 ${c1}, 12px 16px 0 0 ${c1}, 16px 16px 0 0 ${c1}, 20px 16px 0 0 ${c1}, 24px 16px 0 0 ${c1}, 28px 16px 0 0 ${c1}, 32px 16px 0 0 ${c1}, 36px 16px 0 0 ${c1},
+    0px 20px 0 0 ${c2}, 8px 20px 0 0 ${c2}, 16px 20px 0 0 ${c2}, 24px 20px 0 0 ${c2}, 32px 20px 0 0 ${c2},
+    4px 24px 0 0 ${c2}, 12px 24px 0 0 ${c2}, 20px 24px 0 0 ${c2}, 28px 24px 0 0 ${c2}
+  `.trim();
+}
+
+// Wizard crab gets sparkle stars
+function buildWizardCrabShadow(c1, c2, c3) {
+  const w = '#ffffff', bg = '#1a1a2e', star = '#e74c3c', hat = '#8e44ad';
+  return `
+    16px 0px 0 0 ${hat},
+    12px 4px 0 0 ${hat}, 16px 4px 0 0 ${hat}, 20px 4px 0 0 ${hat},
+    8px 8px 0 0 ${hat}, 12px 8px 0 0 ${hat}, 16px 8px 0 0 ${hat}, 20px 8px 0 0 ${hat}, 24px 8px 0 0 ${hat},
+    4px 12px 0 0 ${c1}, 8px 12px 0 0 ${c1}, 12px 12px 0 0 ${c1}, 16px 12px 0 0 ${c1}, 20px 12px 0 0 ${c1}, 24px 12px 0 0 ${c1}, 28px 12px 0 0 ${c1},
+    0px 16px 0 0 ${c3}, 4px 16px 0 0 ${c1}, 8px 16px 0 0 ${c1}, 12px 16px 0 0 ${w}, 16px 16px 0 0 ${bg}, 20px 16px 0 0 ${c1}, 24px 16px 0 0 ${w}, 28px 16px 0 0 ${bg}, 32px 16px 0 0 ${c1}, 36px 16px 0 0 ${c3},
+    0px 20px 0 0 ${c1}, 4px 20px 0 0 ${c1}, 8px 20px 0 0 ${c1}, 12px 20px 0 0 ${c1}, 16px 20px 0 0 ${c1}, 20px 20px 0 0 ${c1}, 24px 20px 0 0 ${c1}, 28px 20px 0 0 ${c1}, 32px 20px 0 0 ${c1}, 36px 20px 0 0 ${c1},
+    0px 24px 0 0 ${c2}, 8px 24px 0 0 ${c2}, 16px 24px 0 0 ${c2}, 24px 24px 0 0 ${c2}, 32px 24px 0 0 ${c2},
+    4px 28px 0 0 ${c2}, 12px 28px 0 0 ${c2}, 20px 28px 0 0 ${c2}, 28px 28px 0 0 ${c2}
+  `.trim();
+}
+
+// Mothership — has an outer ring
+function buildMothershipShadow(c1, c2, c3) {
+  const w = '#ffffff', bg = '#1a1a2e', glow = '#1abc9c';
+  return `
+    4px 0px 0 0 ${glow}, 8px 0px 0 0 ${glow}, 12px 0px 0 0 ${glow}, 24px 0px 0 0 ${glow}, 28px 0px 0 0 ${glow}, 32px 0px 0 0 ${glow},
+    0px 4px 0 0 ${glow}, 4px 4px 0 0 ${c1}, 8px 4px 0 0 ${c1}, 12px 4px 0 0 ${c1}, 16px 4px 0 0 ${c1}, 20px 4px 0 0 ${c1}, 24px 4px 0 0 ${c1}, 28px 4px 0 0 ${c1}, 32px 4px 0 0 ${c1}, 36px 4px 0 0 ${glow},
+    0px 8px 0 0 ${c3}, 4px 8px 0 0 ${c1}, 8px 8px 0 0 ${c1}, 12px 8px 0 0 ${w}, 16px 8px 0 0 ${bg}, 20px 8px 0 0 ${c1}, 24px 8px 0 0 ${w}, 28px 8px 0 0 ${bg}, 32px 8px 0 0 ${c1}, 36px 8px 0 0 ${c3},
+    0px 12px 0 0 ${c1}, 4px 12px 0 0 ${c1}, 8px 12px 0 0 ${c1}, 12px 12px 0 0 ${c1}, 16px 12px 0 0 ${c1}, 20px 12px 0 0 ${c1}, 24px 12px 0 0 ${c1}, 28px 12px 0 0 ${c1}, 32px 12px 0 0 ${c1}, 36px 12px 0 0 ${c1},
+    0px 16px 0 0 ${glow}, 4px 16px 0 0 ${c1}, 8px 16px 0 0 ${c2}, 12px 16px 0 0 ${c2}, 16px 16px 0 0 ${c1}, 20px 16px 0 0 ${c1}, 24px 16px 0 0 ${c2}, 28px 16px 0 0 ${c2}, 32px 16px 0 0 ${c1}, 36px 16px 0 0 ${glow},
+    0px 20px 0 0 ${c2}, 8px 20px 0 0 ${c2}, 16px 20px 0 0 ${glow}, 24px 20px 0 0 ${c2}, 32px 20px 0 0 ${c2},
+    4px 24px 0 0 ${c2}, 12px 24px 0 0 ${glow}, 20px 24px 0 0 ${glow}, 28px 24px 0 0 ${c2}
+  `.trim();
+}
+
+// God crab — ethereal glow
+function buildGodCrabShadow(c1, c2, c3) {
+  const w = '#ffffff', bg = '#1a1a2e', divine = '#f0e6ff', aura = '#c39bd3';
+  return `
+    0px 0px 0 0 ${divine}, 8px 0px 0 0 ${divine}, 16px 0px 0 0 ${divine}, 24px 0px 0 0 ${divine}, 32px 0px 0 0 ${divine}, 40px 0px 0 0 ${divine},
+    0px 4px 0 0 ${aura}, 4px 4px 0 0 ${c1}, 8px 4px 0 0 ${c1}, 12px 4px 0 0 ${c1}, 16px 4px 0 0 ${c1}, 20px 4px 0 0 ${c1}, 24px 4px 0 0 ${c1}, 28px 4px 0 0 ${c1}, 32px 4px 0 0 ${c1}, 36px 4px 0 0 ${c1}, 40px 4px 0 0 ${aura},
+    0px 8px 0 0 ${aura}, 4px 8px 0 0 ${c1}, 8px 8px 0 0 ${c1}, 12px 8px 0 0 ${divine}, 16px 8px 0 0 ${bg}, 20px 8px 0 0 ${c1}, 24px 8px 0 0 ${divine}, 28px 8px 0 0 ${bg}, 32px 8px 0 0 ${c1}, 36px 8px 0 0 ${c1}, 40px 8px 0 0 ${aura},
+    0px 12px 0 0 ${c1}, 4px 12px 0 0 ${c1}, 8px 12px 0 0 ${c1}, 12px 12px 0 0 ${c1}, 16px 12px 0 0 ${c1}, 20px 12px 0 0 ${c1}, 24px 12px 0 0 ${c1}, 28px 12px 0 0 ${c1}, 32px 12px 0 0 ${c1}, 36px 12px 0 0 ${c1},
+    0px 16px 0 0 ${c1}, 4px 16px 0 0 ${c1}, 8px 16px 0 0 ${c1}, 12px 16px 0 0 ${c1}, 16px 16px 0 0 ${c2}, 20px 16px 0 0 ${c2}, 24px 16px 0 0 ${c1}, 28px 16px 0 0 ${c1}, 32px 16px 0 0 ${c1}, 36px 16px 0 0 ${c1},
+    0px 20px 0 0 ${divine}, 4px 20px 0 0 ${c2}, 12px 20px 0 0 ${c2}, 20px 20px 0 0 ${c2}, 28px 20px 0 0 ${c2}, 36px 20px 0 0 ${divine},
+    4px 24px 0 0 ${divine}, 8px 24px 0 0 ${c2}, 16px 24px 0 0 ${c2}, 24px 24px 0 0 ${c2}, 32px 24px 0 0 ${divine}
+  `.trim();
+}
+
+// Army crab — multiple small crabs rendered as one unit
+function buildArmyCrabShadow(c1, c2, c3) {
+  const w = '#ffffff', bg = '#1a1a2e';
+  // Two crabs side by side
+  return `
+    0px 4px 0 0 ${c1}, 4px 4px 0 0 ${c1}, 8px 4px 0 0 ${c1}, 12px 4px 0 0 ${c1}, 16px 4px 0 0 ${c1},
+    0px 8px 0 0 ${c3}, 4px 8px 0 0 ${c1}, 8px 8px 0 0 ${w}, 12px 8px 0 0 ${bg}, 16px 8px 0 0 ${c1},
+    0px 12px 0 0 ${c1}, 4px 12px 0 0 ${c1}, 8px 12px 0 0 ${c1}, 12px 12px 0 0 ${c1}, 16px 12px 0 0 ${c1},
+    0px 16px 0 0 ${c2}, 4px 16px 0 0 ${c2}, 8px 16px 0 0 ${c1}, 12px 16px 0 0 ${c2}, 16px 16px 0 0 ${c2},
+    0px 20px 0 0 ${c2}, 8px 20px 0 0 ${c2}, 16px 20px 0 0 ${c2},
+    20px 4px 0 0 ${c1}, 24px 4px 0 0 ${c1}, 28px 4px 0 0 ${c1}, 32px 4px 0 0 ${c1}, 36px 4px 0 0 ${c1},
+    20px 8px 0 0 ${c3}, 24px 8px 0 0 ${c1}, 28px 8px 0 0 ${w}, 32px 8px 0 0 ${bg}, 36px 8px 0 0 ${c1},
+    20px 12px 0 0 ${c1}, 24px 12px 0 0 ${c1}, 28px 12px 0 0 ${c1}, 32px 12px 0 0 ${c1}, 36px 12px 0 0 ${c1},
+    20px 16px 0 0 ${c2}, 24px 16px 0 0 ${c2}, 28px 16px 0 0 ${c1}, 32px 16px 0 0 ${c2}, 36px 16px 0 0 ${c2},
+    20px 20px 0 0 ${c2}, 28px 20px 0 0 ${c2}, 36px 20px 0 0 ${c2}
+  `.trim();
+}
+
+function getCrabSpriteShadow(upgradeId) {
+  const u = UPGRADES[upgradeId];
+  const c1 = u.color, c2 = u.color2;
+  // Derive a lighter shade for the eye region
+  const c3 = upgradeId === 0 ? '#f1948a' : c1;
+  switch(upgradeId) {
+    case 0: return buildBabyCrabShadow(c1, c2, c3);   // Baby Crab — spec exact
+    case 1: return buildBabyCrabShadow(c1, c2, '#d4ac78'); // Sand Crab
+    case 2: return buildBabyCrabShadow(c1, c2, '#9d7349'); // Coconut Crab
+    case 3: return buildBigCrabShadow(c1, c2, '#b07dd3');  // Hermit Crab
+    case 4: return buildArmyCrabShadow(c1, c2, '#52d68a'); // Crab Army
+    case 5: return buildKingCrabShadow(c1, c2, '#f5cba7'); // Crab King
+    case 6: return buildBigCrabShadow(c1, c2, '#7fe8ff');  // Crab Scientist
+    case 7: return buildWizardCrabShadow(c1, c2, '#f1948a'); // Crab Wizard
+    case 8: return buildMothershipShadow(c1, c2, '#76d7c4'); // Mothership
+    case 9: return buildGodCrabShadow(c1, c2, '#d7bde2');  // Crab God
+  }
+}
+
+// ============================================================
+// RENDER: SHOP
+// ============================================================
+
+function renderShop() {
+  const list = document.getElementById('shop-list');
+  const cps = computeCPS();
+
+  // Rebuild only if needed (we diff by count changes in loop)
+  for (let i = 0; i < 10; i++) {
+    const u = UPGRADES[i];
+    const owned = G.upgradeCounts[i];
+    const cost = upgradeCost(i, owned);
+    const canAfford = G.cookies >= cost;
+    const id = 'shop-item-' + i;
+
+    let item = document.getElementById(id);
+    if (!item) {
+      // Create
+      item = document.createElement('div');
+      item.id = id;
+      item.className = 'shop-item';
+      item.dataset.upgradeId = i;
+      item.addEventListener('click', () => handleBuy(i));
+
+      // Sprite
+      const spriteWrap = document.createElement('div');
+      spriteWrap.className = 'shop-item-sprite-wrap';
+      const sprite = document.createElement('div');
+      sprite.className = 'crab-sprite';
+      sprite.id = 'crab-sprite-' + i;
+      sprite.style.boxShadow = getCrabSpriteShadow(i);
+      spriteWrap.appendChild(sprite);
+      item.appendChild(spriteWrap);
+
+      // Info
+      const info = document.createElement('div');
+      info.className = 'shop-item-info';
+
+      const name = document.createElement('div');
+      name.className = 'shop-item-name';
+      name.textContent = u.name;
+
+      const desc = document.createElement('div');
+      desc.className = 'shop-item-desc';
+      desc.textContent = u.desc;
+
+      const costEl = document.createElement('div');
+      costEl.className = 'shop-item-cost';
+      costEl.id = 'shop-cost-' + i;
+
+      const cpsEl = document.createElement('div');
+      cpsEl.className = 'shop-item-cps';
+      cpsEl.id = 'shop-cps-' + i;
+
+      info.appendChild(name);
+      info.appendChild(desc);
+      info.appendChild(costEl);
+      info.appendChild(cpsEl);
+      item.appendChild(info);
+
+      const countEl = document.createElement('div');
+      countEl.className = 'shop-item-count';
+      countEl.id = 'shop-count-' + i;
+      item.appendChild(countEl);
+
+      list.appendChild(item);
+    }
+
+    // Update dynamic parts
+    document.getElementById('shop-cost-' + i).textContent = fmt(cost) + ' cookies';
+    document.getElementById('shop-cps-' + i).textContent = fmt(u.baseCPS) + ' CPS each';
+    document.getElementById('shop-count-' + i).textContent = owned;
+
+    item.className = 'shop-item ' + (canAfford ? 'can-afford' : 'cannot-afford');
+  }
+}
+
+// ============================================================
+// HANDLE BUY
+// ============================================================
+
+function handleBuy(upgradeId) {
+  const owned = G.upgradeCounts[upgradeId];
+  const cost = upgradeCost(upgradeId, owned);
+  if (G.cookies < cost) return;
+
+  G.cookies -= cost;
+  G.upgradeCounts[upgradeId]++;
+
+  // Flash
+  const item = document.getElementById('shop-item-' + upgradeId);
+  if (item) {
+    item.classList.add('purchase-flash');
+    setTimeout(() => item.classList.remove('purchase-flash'), 200);
+  }
+
+  checkAchievements();
+  renderShop();
+}
+
+// ============================================================
+// ACHIEVEMENTS RENDER
+// ============================================================
+
+function renderAchievements() {
+  const bar = document.getElementById('achievements-bar');
+  bar.innerHTML = '';
+  for (const ach of ACHIEVEMENTS) {
+    const pip = document.createElement('div');
+    pip.className = 'achievement-pip' + (G.unlockedAchievements.includes(ach.id) ? ' unlocked' : '');
+
+    const icon = document.createElement('span');
+    icon.textContent = G.unlockedAchievements.includes(ach.id) ? ach.icon : '-';
+    pip.appendChild(icon);
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'pip-tooltip';
+    tooltip.textContent = ach.name + ': ' + ach.desc;
+    pip.appendChild(tooltip);
+
+    bar.appendChild(pip);
+  }
+}
+
+// ============================================================
+// UI UPDATE (4/sec via throttle)
+// ============================================================
+
+let lastUIUpdate = 0;
+
+function updateUI(now) {
+  if (now - lastUIUpdate < 250) return;
+  lastUIUpdate = now;
+
+  const cps = computeCPS();
+  const shards = computePrestigeShards();
+
+  document.getElementById('cookie-count').textContent = fmt(G.cookies) + ' cookie' + (G.cookies !== 1 ? 's' : '');
+  document.getElementById('total-baked').textContent = fmt(G.totalBaked) + ' baked total';
+  document.getElementById('cps-display').textContent = fmt(cps) + ' cookies/sec';
+  document.getElementById('shard-display').textContent =
+    'Shell Shards: ' + G.shellShards + ' (+' + (G.shellShards * 10) + '% production)';
+  document.getElementById('stats-clicks').textContent = 'Total clicks: ' + fmt(G.totalClicks);
+  document.getElementById('stats-molts').textContent = 'Molts: ' + G.moltCount;
+  document.getElementById('stats-playtime').textContent = 'Playtime: ' + fmtTime(G.totalPlaytime);
+
+  // Molt button
+  const moltBtn = document.getElementById('molt-btn');
+  const moltPreview = document.getElementById('molt-preview');
+  if (G.totalBaked >= 1e9 && shards > 0) {
+    moltBtn.style.display = 'block';
+    moltBtn.textContent = 'MOLT (+' + shards + ' SHELL SHARD' + (shards !== 1 ? 'S' : '') + ')';
+    moltPreview.textContent = 'Gain ' + shards + ' shard' + (shards !== 1 ? 's' : '') + ', reset cookies & crabs';
+  } else {
+    moltBtn.style.display = 'none';
+    moltPreview.textContent = G.totalBaked < 1e9
+      ? 'Bake ' + fmt(1e9 - G.totalBaked) + ' more to unlock Molting'
+      : '';
+  }
+
+  renderShop();
+}
+
+// ============================================================
+// FLAVOR TEXT ROTATION
+// ============================================================
+
+let flavorIndex = 0;
+let lastFlavorTime = 0;
+
+function updateFlavor(now) {
+  if (now - lastFlavorTime < 30000) return;
+  lastFlavorTime = now;
+  flavorIndex = (flavorIndex + 1) % FLAVOR_TEXTS.length;
+  document.getElementById('flavor-text').textContent = FLAVOR_TEXTS[flavorIndex];
+}
+
+// ============================================================
+// AUTO-SAVE
+// ============================================================
+
+let lastAutoSave = 0;
+
+function checkAutoSave(now) {
+  if (now - lastAutoSave < 30000) return;
+  lastAutoSave = now;
+  saveGame();
+}
+
+// ============================================================
+// GAME LOOP
+// ============================================================
+
+let lastTick = null;
+
+function gameLoop(timestamp) {
+  if (lastTick === null) lastTick = timestamp;
+  const delta = (timestamp - lastTick) / 1000;
+  lastTick = timestamp;
+
+  const cps = computeCPS();
+  const earned = cps * delta;
+  G.cookies += earned;
+  G.totalBaked += earned;
+  G.totalPlaytime += delta;
+
+  checkAchievements();
+  updateFlavor(timestamp);
+  updateUI(timestamp);
+  checkAutoSave(timestamp);
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ============================================================
+// COOKIE CLICK HANDLER
+// ============================================================
+
+function handleCookieClick(e) {
+  const val = clickValue();
+  G.cookies += val;
+  G.totalBaked += val;
+  G.totalClicks++;
+
+  // Get click position relative to cookie-area
+  const area = document.getElementById('cookie-area');
+  const rect = area.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  spawnFloatText(x, y, val);
+  spawnCrumbs(x, y);
+
+  // Click animation
+  const container = document.getElementById('cookie-sprite-container');
+  container.classList.add('clicking');
+  setTimeout(() => container.classList.remove('clicking'), 80);
+
+  checkAchievements();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+
+function init() {
+  const saved = loadGame();
+
+  // Offline earnings if we had a save
+  if (saved) {
+    applyOfflineEarnings();
+  }
+
+  // Cookie click
+  document.getElementById('cookie-wrapper').addEventListener('mousedown', handleCookieClick);
+  document.getElementById('cookie-wrapper').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    handleCookieClick(e.touches[0]);
+  }, { passive: false });
+
+  // Build achievements bar
+  renderAchievements();
+
+  // Auto-save on exit
+  window.addEventListener('beforeunload', () => saveGame());
+
+  // Flavor text init
+  lastFlavorTime = Date.now() - 29000; // force first show slightly soon
+
+  // Start loop
+  lastAutoSave = Date.now();
+  requestAnimationFrame(gameLoop);
+}
+
+init();
+</script>
+</body>
+</html>
